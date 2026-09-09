@@ -349,6 +349,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .legend i.note{background:transparent;border:1.5px solid var(--note)}
 .footnote{margin-top:16px;font-size:12px;color:var(--faint);max-width:62ch;line-height:1.5}
 
+body[data-role="view"] #newEntry,
+body[data-role="view"] .fab,
+body[data-role="view"] #saveEntry,
+body[data-role="view"] #deleteEntry,
+body[data-role="view"] .add,
+body[data-role="view"] .aday footer{display:none!important}
 body[data-view="list"] .calendar{display:none}
 body[data-view="list"] .agenda{display:flex}
 body[data-view="list"] .legend{display:none}
@@ -572,36 +578,108 @@ body[data-view="list"] .legend{display:none}
 "use strict";
 
 /* ---------------- Anmeldung ---------------- */
-var USER = "travelengineer", PASS = "doctor", AUTHK = "reisekalender-auth";
+/* Ohne eingerichtete Ablage prüft die Seite selbst, dann gelten diese Werte.
+   Mit Ablage prüft der Worker, das Passwort steht dann nur noch dort.        */
+var USER = "travelengineer", PASS = "doctor";
+var AUTHK = "reisekalender-auth", PWK = "reisekalender-pwhash", SYNCK = "reisekalender-sync";
 var $ = function(id){ return document.getElementById(id); };
+
+/* Adresse des Cloudflare Workers. Lässt sich auch einmalig über
+   ...?sync=https://beispiel.workers.dev setzen, der Wert bleibt dann im Gerät. */
+var SYNC_URL = "";
+try{
+  var qsync = new URLSearchParams(location.search).get("sync");
+  if(qsync) localStorage.setItem(SYNCK, qsync);
+  SYNC_URL = localStorage.getItem(SYNCK) || SYNC_URL;
+}catch(e){}
+SYNC_URL = String(SYNC_URL || "").trim().replace(/\/+$/, "");
+
+var auth = null;   // { user, pass }
+var role = "edit"; // edit, view oder offline
+
+function loadAuth(){
+  try{
+    var raw = sessionStorage.getItem(AUTHK) || localStorage.getItem(AUTHK);
+    if(raw){ var a = JSON.parse(raw); if(a && a.user) return a; }
+  }catch(e){}
+  return null;
+}
+function storeAuth(a, keep){
+  try{
+    sessionStorage.setItem(AUTHK, JSON.stringify(a));
+    if(keep) localStorage.setItem(AUTHK, JSON.stringify(a));
+    else localStorage.removeItem(AUTHK);
+  }catch(e){}
+}
+function pwHash(u, p){
+  try{
+    var data = new TextEncoder().encode("rk1|" + String(u).toLowerCase() + "|" + p);
+    return crypto.subtle.digest("SHA-256", data).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(b){
+        return b.toString(16).padStart(2, "0");
+      }).join("");
+    });
+  }catch(e){ return Promise.resolve(""); }
+}
+
+/* Ergebnis: "edit", "view", "offline" oder null bei falschen Daten. */
+function tryLogin(u, p){
+  if(!SYNC_URL) return Promise.resolve(u === USER && p === PASS ? "edit" : null);
+  return fetch(SYNC_URL + "/trip", { headers: { "X-Trip-User": u, "X-Trip-Auth": p } })
+    .then(function(r){
+      if(r.status === 401 || r.status === 403) return null;
+      if(!r.ok) throw new Error("http");
+      return r.json().then(function(j){
+        serverDoc = j.doc || null;
+        return j.role === "view" ? "view" : "edit";
+      });
+    })
+    .catch(function(){
+      return pwHash(u, p).then(function(h){
+        var stored = "";
+        try{ stored = localStorage.getItem(PWK) || ""; }catch(e){}
+        return h && stored && h === stored ? "offline" : null;
+      });
+    });
+}
 
 function unlock(){
   $("gate").style.display = "none";
   $("app").hidden = false;
   start();
 }
-function isUnlocked(){
-  try{
-    return sessionStorage.getItem(AUTHK) === "1" || localStorage.getItem(AUTHK) === "1";
-  }catch(e){ return false; }
-}
 $("gateForm").addEventListener("submit", function(ev){
   ev.preventDefault();
-  var u = $("gUser").value.trim().toLowerCase(), p = $("gPass").value;
-  if(u === USER && p === PASS){
-    try{
-      sessionStorage.setItem(AUTHK, "1");
-      if($("gKeep").checked) localStorage.setItem(AUTHK, "1");
-    }catch(e){}
+  var u = $("gUser").value.trim(), p = $("gPass").value;
+  var btn = ev.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = "prüfe …";
+  tryLogin(u, p).then(function(r){
+    if(!r){
+      $("gErr").textContent = "Benutzername oder Passwort stimmt nicht.";
+      $("gErr").classList.add("show");
+      $("gPass").value = "";
+      $("gPass").focus();
+      return;
+    }
+    role = r === "offline" ? "edit" : r;
+    auth = { user: u, pass: p };
+    storeAuth(auth, $("gKeep").checked);
+    if(r !== "offline") pwHash(u, p).then(function(h){ try{ localStorage.setItem(PWK, h); }catch(e){} });
     unlock();
-  } else {
+  }).catch(function(){
+    $("gErr").textContent = "Anmeldung derzeit nicht möglich, bitte später nochmal.";
     $("gErr").classList.add("show");
-    $("gPass").value = "";
-    $("gPass").focus();
-  }
+  }).then(function(){
+    btn.disabled = false;
+    btn.textContent = "Anmelden";
+  });
 });
 $("lockBtn").addEventListener("click", function(){
-  try{ localStorage.removeItem(AUTHK); sessionStorage.removeItem(AUTHK); }catch(e){}
+  try{
+    localStorage.removeItem(AUTHK);
+    sessionStorage.removeItem(AUTHK);
+  }catch(e){}
   location.reload();
 });
 
@@ -672,14 +750,25 @@ var SEED = {
 
 /* ---------------- Zustand ---------------- */
 var today = iso(new Date());
-var state = { meta:{ name:"Reise", start: mondayOf(today), end: addDays(mondayOf(today), 13) }, entries:{} };
+var state = {
+  meta:{ name:"Reise", start: mondayOf(today), end: addDays(mondayOf(today), 13) },
+  metaUpdatedAt: 0, entries:{}, deleted:{}
+};
 var db = null, sampleFn = null, downloads = null;
 var LSK = "reisekalender-v1";
 var started = false;
+var SEED_TS = 1000; /* bewusst alt, damit jede echte Änderung die Startdaten schlägt */
 
 function seedState(){
-  var s = { meta:{ name:SEED.meta.name, start:SEED.meta.start, end:SEED.meta.end }, entries:{} };
-  SEED.entries.forEach(function(e){ s.entries[e.id] = JSON.parse(JSON.stringify(e)); });
+  var s = {
+    meta:{ name:SEED.meta.name, start:SEED.meta.start, end:SEED.meta.end },
+    metaUpdatedAt: SEED_TS, entries:{}, deleted:{}
+  };
+  SEED.entries.forEach(function(e){
+    var c = JSON.parse(JSON.stringify(e));
+    c.updatedAt = SEED_TS;
+    s.entries[c.id] = c;
+  });
   return s;
 }
 function saveLocal(){ try{ localStorage.setItem(LSK, JSON.stringify(state)); }catch(e){} }
@@ -688,7 +777,13 @@ function loadLocal(){
     var raw = localStorage.getItem(LSK);
     if(raw){
       var p = JSON.parse(raw);
-      if(p && p.meta){ state = p; state.entries = state.entries || {}; return true; }
+      if(p && p.meta){
+        state = p;
+        state.entries = state.entries || {};
+        state.deleted = state.deleted || {};
+        state.metaUpdatedAt = Number(state.metaUpdatedAt || SEED_TS);
+        return true;
+      }
     }
   }catch(e){}
   state = seedState();
@@ -696,16 +791,24 @@ function loadLocal(){
   return false;
 }
 function saveMeta(){
+  state.metaUpdatedAt = Date.now();
   if(db) db.doc("trip/meta").set({ name: state.meta.name, start: state.meta.start, end: state.meta.end }).catch(showDbError);
-  else saveLocal();
+  else { saveLocal(); pushSoon(); }
 }
 function saveEntry(e){
+  e.updatedAt = Date.now();
   if(db) db.doc("entries/" + e.id).set(e).catch(showDbError);
-  else { state.entries[e.id] = e; saveLocal(); render(); }
+  else { state.entries[e.id] = e; saveLocal(); pushSoon(); render(); }
 }
 function removeEntry(id){
   if(db) db.doc("entries/" + id).delete().catch(showDbError);
-  else { delete state.entries[id]; saveLocal(); render(); }
+  else {
+    delete state.entries[id];
+    state.deleted[id] = Date.now();
+    saveLocal();
+    pushSoon();
+    render();
+  }
 }
 function showDbError(err){
   $("syncTxt").textContent = (err && err.code === "revoked") ? "Zugriff beendet" : "nicht gespeichert";
@@ -1292,7 +1395,10 @@ $("impFile").addEventListener("change", function(){
     try{
       var p = JSON.parse(String(rd.result));
       if(!p || !p.meta || !p.entries) throw new Error("format");
-      state = { meta:p.meta, entries:p.entries };
+      var now = Date.now();
+      state = { meta:p.meta, metaUpdatedAt:now, entries:p.entries, deleted:p.deleted || {} };
+      Object.keys(state.entries).forEach(function(k){ state.entries[k].updatedAt = now; });
+      pushSoon();
       if(db){
         db.doc("trip/meta").set(state.meta).catch(function(){});
         Object.keys(state.entries).forEach(function(k){
@@ -1307,6 +1413,103 @@ $("impFile").addEventListener("change", function(){
   rd.readAsText(f);
   this.value = "";
 });
+
+/* ---------------- Abgleich mit der Ablage ---------------- */
+var serverDoc = null, lastRev = -1;
+var pushTimer = null, pushing = false, dirty = false;
+
+function syncActive(){ return !!SYNC_URL && !!auth && !db; }
+function syncHeaders(){
+  return {
+    "Content-Type": "application/json",
+    "X-Trip-User": auth ? auth.user : "",
+    "X-Trip-Auth": auth ? auth.pass : ""
+  };
+}
+function setSync(kind, text){
+  $("sync").dataset.state = kind;
+  $("syncTxt").textContent = text;
+}
+function applyDoc(doc){
+  if(!doc) return;
+  lastRev = Number(doc.rev || 0);
+  if(doc.meta && Number(doc.metaUpdatedAt || 0) >= Number(state.metaUpdatedAt || 0)){
+    state.meta = doc.meta;
+    state.metaUpdatedAt = Number(doc.metaUpdatedAt || 0);
+  }
+  state.entries = doc.entries || {};
+  state.deleted = doc.deleted || {};
+  saveLocal();
+  render();
+}
+function localDoc(){
+  return {
+    meta: state.meta,
+    metaUpdatedAt: Number(state.metaUpdatedAt || 0),
+    entries: state.entries,
+    deleted: state.deleted || {}
+  };
+}
+function pull(){
+  if(!syncActive() || dirty || pushing) return;
+  fetch(SYNC_URL + "/trip", { headers: syncHeaders() })
+    .then(function(r){ if(!r.ok) throw new Error("http"); return r.json(); })
+    .then(function(j){
+      if(j.doc && Number(j.doc.rev || 0) !== lastRev) applyDoc(j.doc);
+      setSync("db", role === "view" ? "abgeglichen, nur ansehen" : "abgeglichen");
+    })
+    .catch(function(){ setSync("local", "offline"); });
+}
+function push(){
+  if(!syncActive() || pushing) return;
+  if(role === "view"){ dirty = false; return; }
+  pushing = true;
+  dirty = false;
+  setSync("wait", "sendet …");
+  fetch(SYNC_URL + "/trip", { method:"PUT", headers:syncHeaders(), body:JSON.stringify(localDoc()) })
+    .then(function(r){ if(!r.ok) throw new Error("http"); return r.json(); })
+    .then(function(j){
+      applyDoc(j.doc);
+      setSync("db", "abgeglichen");
+    })
+    .catch(function(){
+      dirty = true;
+      setSync("local", "offline, Änderungen warten");
+    })
+    .then(function(){ pushing = false; });
+}
+function pushSoon(){
+  if(!syncActive()) return;
+  dirty = true;
+  setSync("wait", "Änderung vorgemerkt");
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(push, 1200);
+}
+function startSync(){
+  document.body.dataset.role = role;
+  if(!SYNC_URL){
+    setSync("local", "auf diesem Gerät gespeichert");
+    $("footnote").textContent = "Strecke und Fahrzeit kommen von OpenStreetMap (Nominatim und OSRM) und sind überschreibbar. Die Reisedaten liegen nur im Speicher dieses Browsers, mit „Sichern“ und „Laden“ überträgst du sie auf ein anderes Gerät.";
+    return;
+  }
+  $("footnote").textContent = "Strecke und Fahrzeit kommen von OpenStreetMap (Nominatim und OSRM) und sind überschreibbar. Einträge werden zwischen allen angemeldeten Geräten abgeglichen, offline Geändertes wird nachgereicht.";
+  setSync("wait", "verbinde …");
+  if(serverDoc && (serverDoc.meta || Object.keys(serverDoc.entries || {}).length)){
+    applyDoc(serverDoc);
+    setSync("db", role === "view" ? "abgeglichen, nur ansehen" : "abgeglichen");
+  } else {
+    dirty = true;
+    push();
+  }
+  setInterval(function(){
+    if(document.visibilityState !== "visible") return;
+    if(dirty) push(); else pull();
+  }, 15000);
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible"){ if(dirty) push(); else pull(); }
+  });
+  window.addEventListener("online", function(){ if(dirty) push(); else pull(); });
+}
 
 /* ---------------- Start ---------------- */
 function start(){
@@ -1350,14 +1553,25 @@ function start(){
     window.claude.use("sample").then(function(s){ sampleFn = s; });
     window.claude.use("downloads").then(function(dl){ downloads = dl; });
   } else {
-    $("sync").dataset.state = "local";
-    $("syncTxt").textContent = "auf diesem Gerät gespeichert";
-    $("footnote").textContent = "Strecke und Fahrzeit kommen von OpenStreetMap (Nominatim und OSRM) und sind überschreibbar. Die Reisedaten liegen nur im Speicher dieses Browsers, mit „Sichern“ und „Laden“ überträgst du sie auf ein anderes Gerät.";
+    startSync();
   }
 }
 
-if(isUnlocked()) unlock();
-else setTimeout(function(){ $("gUser").focus(); }, 60);
+var savedAuth = loadAuth();
+if(savedAuth){
+  auth = savedAuth;
+  if(SYNC_URL){
+    tryLogin(auth.user, auth.pass).then(function(r){
+      if(!r){ auth = null; setTimeout(function(){ $("gUser").focus(); }, 60); return; }
+      role = r === "offline" ? "edit" : r;
+      unlock();
+    });
+  } else {
+    unlock();
+  }
+} else {
+  setTimeout(function(){ $("gUser").focus(); }, 60);
+}
 })();
 </script>
 

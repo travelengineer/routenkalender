@@ -23,29 +23,58 @@ Auf Knopfdruck wird der Ort über **Nominatim** gesucht und die Straßenroute ü
 möglichst wenige Anfragen anfallen. Beide Dienste sind für kleine, private
 Nutzung gedacht, bitte nicht in Schleifen abfragen.
 
-## Daten
+## Abgleich zwischen Geräten
 
-Alles liegt ausschließlich im lokalen Speicher des Browsers (`localStorage`), es
-gibt keinen Server und keine Übertragung. Zum Wechsel zwischen iPad und iPhone
-dienen die Knöpfe **Sichern** (JSON-Datei) und **Laden**. **Kalenderdatei**
-erzeugt eine `.ics`-Datei für den Apple Kalender.
+Ohne eingerichtete Ablage liegen alle Daten nur im lokalen Speicher des Browsers.
+Mit Ablage gleichen sich alle angemeldeten Geräte ab: nach jeder Änderung wird
+gesendet, im Hintergrund alle 15 Sekunden geholt, und beim Zurückkehren auf den
+Tab sofort. Offline geänderte Einträge werden nachgereicht, sobald wieder
+Verbindung besteht.
+
+Zusammengeführt wird je Eintrag, der jüngere Zeitstempel gewinnt. Gelöschtes wird
+als Grabstein vermerkt und taucht daher nicht vom anderen Gerät wieder auf.
+
+### Ablage einrichten (Cloudflare Worker, kostenlos)
+
+1. Konto auf dash.cloudflare.com anlegen.
+2. **Storage & Databases → KV → Create instance**, Name `routenkalender`.
+3. **Compute (Workers) → Create → Start from Hello World**, Name `routenkalender`,
+   Deploy, dann **Edit code**. Den Inhalt von `worker.js` aus diesem Repository
+   vollständig hineinkopieren, alles Bestehende ersetzen, Deploy.
+4. Im Worker unter **Settings → Bindings → Add → KV namespace**:
+   Variablenname `TRIP`, Namespace `routenkalender`.
+5. Unter **Settings → Variables and Secrets** anlegen:
+   - `TRIP_USER` (Secret) – der Benutzername
+   - `TRIP_PASSWORD` (Secret) – das Passwort zum Bearbeiten
+   - `TRIP_PASSWORD_VIEW` (Secret, freiwillig) – Passwort nur zum Ansehen
+   - `ALLOWED_ORIGIN` (Text) – `https://travelengineer.github.io`
+6. Die Adresse des Workers (`https://….workers.dev`) in `index.html` bei
+   `var SYNC_URL = "";` eintragen. Alternativ die Seite einmal je Gerät mit
+   `?sync=https://….workers.dev` aufrufen, die Adresse bleibt dann gespeichert.
+
+Danach steht das Passwort nur noch im Worker, nicht mehr im Quelltext, und die
+Anmeldemaske schützt die Daten tatsächlich.
+
+## Dateien sichern
+
+**Sichern** schreibt den ganzen Stand als JSON-Datei, **Laden** liest sie wieder
+ein. **Kalenderdatei** erzeugt eine `.ics` für den Apple Kalender.
 
 ## Anmeldung
 
-Vor dem Kalender liegt eine Maske mit Benutzername und Passwort. Sie läuft in der
-Seite selbst, die Zugangsdaten stehen also im Quelltext. Das hält beiläufige
-Mitleser ab, ist aber kein Zugriffsschutz. Wer echten Schutz braucht, hostet die
-Seite hinter einer serverseitigen Anmeldung.
+Ohne eingerichtete Ablage prüft die Seite selbst, die Zugangsdaten stehen dann im
+Quelltext und halten nur beiläufige Mitleser ab. Mit Ablage prüft der Worker.
+Die Maske erscheint bei jedem Besuch, außer das Häkchen ist gesetzt. „Sperren"
+meldet wieder ab.
 
 ## Startdaten ändern
 
-Die Beispielreise steht in `index.html` im Block zwischen
-`BEGINN STARTDATEN` und `ENDE STARTDATEN`. Sie wird nur geladen, solange im
-Browser noch nichts gespeichert ist. Für einen leeren Kalender die Liste
-`entries` auf `[]` setzen.
+Die Beispielreise steht in `index.html` im Block zwischen `BEGINN STARTDATEN` und
+`ENDE STARTDATEN`. Sie wird nur geladen, solange im Browser noch nichts
+gespeichert ist, und dient bei eingerichteter Ablage als erster Serverstand. Für
+einen leeren Kalender die Liste `entries` auf `[]` setzen.
 
 ## Aufbau
 
-Eine einzelne Datei ohne Abhängigkeiten, außer den Schriften von Google Fonts.
-Kein Build, kein Framework. Zum Ändern die Datei bearbeiten und einchecken,
-GitHub Pages veröffentlicht sie automatisch neu.
+Eine einzelne HTML-Datei ohne Abhängigkeiten, außer den Schriften von Google
+Fonts, dazu `worker.js` für die Ablage. Kein Build, kein Framework.
