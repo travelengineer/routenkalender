@@ -1,0 +1,1365 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Wochenweiser Reisekalender mit Aufenthalten, Fahrten, Terminen und Notizen.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F3F3F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131312" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Routenkalender">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%231E1E1C%22/%3E%3Crect x=%226%22 y=%229%22 width=%2220%22 height=%223%22 fill=%22%23fff%22/%3E%3Crect x=%226%22 y=%2216%22 width=%2212%22 height=%223%22 fill=%22%23fff%22 opacity=%22.7%22/%3E%3Crect x=%226%22 y=%2222%22 width=%2216%22 height=%223%22 fill=%22%23fff%22 opacity=%22.45%22/%3E%3C/svg%3E">
+<style>
+html{background:#F3F3F1}
+@media (prefers-color-scheme: dark){html{background:#131312}}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+</style>
+</head>
+<body>
+<title>Routenkalender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F3F3F1;
+  --surface:#FFFFFF;
+  --surface-2:#F7F7F5;
+  --line:#DDDDD8;
+  --line-soft:#EAEAE5;
+  --ink:#1A1A18;
+  --ink-2:#41413E;
+  --muted:#82817B;
+  --faint:#A9A8A2;
+  --accent:#1E1E1C;
+  --accent-ink:#FFFFFF;
+  --accent-soft:#ECECE8;
+  --bar:#2C2C29;
+  --bar-ink:#FFFFFF;
+  --drive:#6A6A65;
+  --event:#1E1E1C;
+  --note:#A3A29B;
+  --today:#1E1E1C;
+  --today-ink:#FFFFFF;
+  --outside:#EEEEEA;
+  --shadow:0 1px 2px rgba(20,20,18,.05), 0 10px 30px -16px rgba(20,20,18,.25);
+  --radius:10px;
+  --kw:34px;
+  --f-display:"Figtree","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131312;
+    --surface:#1B1B1A;
+    --surface-2:#232322;
+    --line:#333331;
+    --line-soft:#292928;
+    --ink:#EEEEEA;
+    --ink-2:#C7C7C1;
+    --muted:#8B8A84;
+    --faint:#6E6D68;
+    --accent:#EEEEEA;
+    --accent-ink:#17170F;
+    --accent-soft:#2A2A28;
+    --bar:#D9D9D3;
+    --bar-ink:#1A1A18;
+    --drive:#9A998F;
+    --event:#EEEEEA;
+    --note:#6E6D68;
+    --today:#EEEEEA;
+    --today-ink:#171717;
+    --outside:#171716;
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 12px 32px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131312;
+  --surface:#1B1B1A;
+  --surface-2:#232322;
+  --line:#333331;
+  --line-soft:#292928;
+  --ink:#EEEEEA;
+  --ink-2:#C7C7C1;
+  --muted:#8B8A84;
+  --faint:#6E6D68;
+  --accent:#EEEEEA;
+  --accent-ink:#17170F;
+  --accent-soft:#2A2A28;
+  --bar:#D9D9D3;
+  --bar-ink:#1A1A18;
+  --drive:#9A998F;
+  --event:#EEEEEA;
+  --note:#6E6D68;
+  --today:#EEEEEA;
+  --today-ink:#171717;
+  --outside:#171716;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 12px 32px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:15px;
+  line-height:1.45;
+  -webkit-text-size-adjust:100%;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+
+.shell{max-width:1400px;margin:0 auto;padding:18px 20px 56px}
+
+/* ---------- Anmeldung ---------- */
+.gate{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:24px;background:var(--bg);z-index:40;
+}
+.gate .card{
+  width:min(380px,100%);background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;padding:26px 24px 22px;box-shadow:var(--shadow);
+}
+.gate .mark{
+  width:34px;height:34px;border-radius:9px;background:var(--accent);color:var(--accent-ink);
+  display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:15px;
+  margin-bottom:14px;
+}
+.gate h1{margin:0 0 2px;font-family:var(--f-display);font-weight:700;font-size:21px;letter-spacing:-.01em}
+.gate p{margin:0 0 18px;font-size:13.5px;color:var(--muted);line-height:1.5}
+.gate form{display:flex;flex-direction:column;gap:11px}
+.gate .keep{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;margin-top:2px}
+.gate .keep input{width:16px;height:16px;accent-color:var(--accent);margin:0}
+.gate .err{font-size:13px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);
+  border-radius:8px;padding:8px 10px;display:none}
+.gate .err.show{display:block}
+.gate .btn{justify-content:center;width:100%;margin-top:3px}
+
+/* ---------- Kopf ---------- */
+.masthead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 22px;margin-bottom:12px}
+.brand{display:flex;flex-direction:column;gap:1px;min-width:min(100%,300px);flex:1 1 300px}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+#tripName{
+  font-family:var(--f-display);font-weight:700;font-size:clamp(23px,3.2vw,32px);
+  letter-spacing:-.02em;line-height:1.1;
+  background:transparent;border:0;padding:2px 4px;margin-left:-4px;width:100%;
+  border-radius:6px;text-wrap:balance;
+}
+#tripName:hover{background:var(--surface-2)}
+
+.range{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 12px;background:transparent;padding:0}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select,.field textarea{
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:6px 9px;min-height:34px;
+}
+.field input::placeholder,.field textarea::placeholder{color:var(--faint)}
+.field input[type="date"],.field input[type="time"]{font-family:var(--f-mono);font-size:13px}
+.rangesum{font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-bottom:8px;white-space:nowrap}
+
+.stats{
+  display:flex;flex-wrap:wrap;gap:4px 18px;margin:2px 0 14px;
+  font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;
+}
+.stats b{font-weight:500;color:var(--ink-2)}
+
+/* ---------- Werkzeugleiste ---------- */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:7px 13px;cursor:pointer;font-weight:500;
+  transition:background .12s ease,border-color .12s ease;
+}
+.btn:hover{background:var(--surface-2);border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{opacity:.88}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:7px 14px;cursor:pointer;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink)}
+.spacer{flex:1 1 auto}
+.sync{display:inline-flex;align-items:center;gap:7px;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+.sync[data-state="db"] .dot{background:var(--ink)}
+.sync[data-state="local"] .dot{background:transparent;border:1.5px solid var(--muted)}
+
+.fab{
+  position:fixed;right:16px;bottom:16px;bottom:calc(16px + env(safe-area-inset-bottom));
+  width:56px;height:56px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+  border:0;font-size:27px;line-height:1;display:none;align-items:center;justify-content:center;
+  box-shadow:0 6px 20px -6px rgba(0,0,0,.45);cursor:pointer;z-index:15;
+}
+
+/* ---------- Kalender ---------- */
+.calendar{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.dow{display:grid;grid-template-columns:var(--kw) repeat(7,1fr);border-bottom:1px solid var(--line)}
+.dow div{
+  padding:6px 0 7px;text-align:center;
+  font-family:var(--f-display);font-size:10.5px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);
+}
+.dow div:first-child{font-family:var(--f-mono);font-weight:400;letter-spacing:.04em;color:var(--faint)}
+
+.weeks{display:flex;flex-direction:column}
+.weeks.aspect{aspect-ratio:4/3}
+.weeks.aspect .week{flex:1 1 0;min-height:0}
+
+.week{display:grid;grid-template-columns:var(--kw) 1fr}
+.kw{display:flex;align-items:flex-start;justify-content:center;padding-top:7px;
+  font-family:var(--f-mono);font-size:10px;color:var(--faint)}
+.wbody{position:relative;min-width:0}
+.days{display:grid;grid-template-columns:repeat(7,1fr);height:100%}
+.day{
+  position:relative;min-width:0;min-height:98px;
+  border-top:1px solid var(--line-soft);
+  border-left:1px solid var(--line-soft);
+  padding:calc(23px + var(--bars,0) * 20px) 4px 4px;
+  display:flex;flex-direction:column;gap:2px;overflow:hidden;
+}
+.week:first-child .day{border-top:0}
+.day.out{background:var(--outside)}
+.dnum{
+  position:absolute;top:2px;left:0;right:0;text-align:center;
+  font-family:var(--f-display);font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;
+  color:var(--ink-2);line-height:19px;
+}
+.day.out .dnum{color:var(--faint)}
+.day.first .dnum::before{content:attr(data-mon) " ";font-size:11px;color:var(--muted);font-weight:600}
+.dnum .n{display:inline-block;min-width:21px;padding:0 3px;border-radius:10px}
+.day.today .dnum .n{background:var(--today);color:var(--today-ink)}
+.dkm{position:absolute;top:4px;right:5px;font-family:var(--f-mono);font-size:9.5px;
+  color:var(--muted);font-variant-numeric:tabular-nums}
+.add{
+  position:absolute;top:2px;left:3px;width:19px;height:19px;border:0;border-radius:50%;
+  background:transparent;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;
+  opacity:0;transition:opacity .12s ease;
+}
+.day:hover .add,.add:focus-visible{opacity:1}
+.add:hover{background:var(--accent-soft);color:var(--ink)}
+.day.out .add{display:none}
+
+.bars{position:absolute;top:21px;left:0;right:0;pointer-events:none}
+.bar{
+  position:absolute;height:18px;pointer-events:auto;cursor:pointer;
+  display:flex;align-items:center;gap:6px;padding:0 7px;
+  font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;
+  background:var(--bar);color:var(--bar-ink);border:0;border-radius:0;
+}
+.bar>span:first-child{overflow:hidden;text-overflow:ellipsis}
+.bar:hover{opacity:.85}
+.bar.s{border-top-left-radius:4px;border-bottom-left-radius:4px;margin-left:2px}
+.bar.e{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:2px}
+.bar .n{font-family:var(--f-mono);font-size:9.5px;opacity:.75;flex:none}
+
+.chip{
+  border:0;text-align:left;width:100%;cursor:pointer;background:transparent;border-radius:4px;
+  padding:1px 4px 2px;display:flex;flex-direction:column;overflow:hidden;flex:none;line-height:1.3;
+}
+.chip:hover{background:var(--surface-2)}
+.chip .t{display:flex;align-items:center;gap:5px;font-size:11.5px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.chip .t .tm{font-family:var(--f-mono);font-size:10px;color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
+.chip .t .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip .t i{width:7px;height:7px;border-radius:50%;flex:none;background:var(--muted);box-sizing:border-box}
+.chip .m{font-family:var(--f-mono);font-size:9.5px;color:var(--muted);font-variant-numeric:tabular-nums;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:12px}
+.chip.drive .t i{background:var(--drive)}
+.chip.event .t i{background:var(--event)}
+.chip.note .t i{background:transparent;border:1.5px solid var(--note)}
+.chip.stay .t i{background:var(--bar)}
+
+/* ---------- Listenansicht ---------- */
+.agenda{display:none;flex-direction:column;gap:10px}
+.aday{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.aday>header{
+  display:flex;align-items:baseline;gap:10px;padding:9px 13px;
+  border-bottom:1px solid var(--line-soft);background:var(--surface-2);
+}
+.aday.is-today>header{background:var(--accent);color:var(--accent-ink)}
+.aday.is-today .sub,.aday.is-today .km{color:var(--accent-ink);opacity:.75}
+.aday h3{margin:0;font-family:var(--f-display);font-size:15px;font-weight:700;letter-spacing:-.01em}
+.aday .sub{font-family:var(--f-mono);font-size:11px;color:var(--faint)}
+.aday .km{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.aday .items{display:flex;flex-direction:column;padding:7px 9px 9px;gap:5px}
+.aday .items .chip{padding:8px 10px;border-radius:8px;background:var(--surface-2);gap:2px}
+.aday .items .chip .t{font-size:14px;flex-wrap:wrap}
+.aday .items .chip .t .tx{white-space:normal;overflow:visible}
+.aday .items .chip .t .tm{font-size:12px}
+.aday .items .chip .m{font-size:11.5px;white-space:normal;padding-left:12px}
+.aday .items .empty{font-size:12.5px;color:var(--faint);padding:2px 4px}
+.aday footer{padding:0 9px 10px}
+
+/* ---------- Dialog ---------- */
+.scrim{
+  position:fixed;inset:0;background:rgba(20,20,18,.44);display:none;
+  align-items:flex-start;justify-content:center;padding:20px;overflow:auto;z-index:20;
+}
+.scrim.open{display:flex}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  width:min(560px,100%);box-shadow:var(--shadow);margin:auto 0}
+.sheet>header{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.sheet h2{margin:0;font-family:var(--f-display);font-size:19px;font-weight:700;letter-spacing:-.015em}
+.sheet .body{padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.types{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.types button{
+  border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 4px;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:500;
+  color:var(--muted);
+}
+.types button .ic{font-family:var(--f-mono);font-size:14px}
+.types button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row.thirds{grid-template-columns:1fr 1fr 1fr}
+.full{grid-column:1/-1}
+.field textarea{min-height:60px;resize:vertical;font-family:var(--f-body)}
+
+.sugg{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.sugg button{border:1px solid var(--line);background:var(--surface-2);border-radius:20px;
+  padding:3px 10px;font-size:12px;cursor:pointer;color:var(--ink-2);line-height:1.5}
+.sugg button:hover{border-color:var(--muted);background:var(--accent-soft)}
+.sugg button.pin{border-style:dashed;color:var(--muted)}
+.sugg .lbl{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint);align-self:center;margin-right:1px}
+
+.routebox{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+  display:flex;flex-direction:column;gap:8px}
+.routehead{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.routehead .lbl{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);padding-bottom:9px}
+.routeout{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);min-height:18px;line-height:1.5}
+.routeout .est{color:var(--faint)}
+.sheet>footer{display:flex;gap:8px;align-items:center;padding:0 16px 16px}
+.hint{font-size:12px;color:var(--muted);line-height:1.45;margin:0}
+
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;font-size:12px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:8px;height:8px;border-radius:50%;background:var(--muted);box-sizing:border-box}
+.legend i.stayline{width:16px;height:8px;border-radius:2px;background:var(--bar)}
+.legend i.drive{background:var(--drive)}
+.legend i.event{background:var(--event)}
+.legend i.note{background:transparent;border:1.5px solid var(--note)}
+.footnote{margin-top:16px;font-size:12px;color:var(--faint);max-width:62ch;line-height:1.5}
+
+body[data-view="list"] .calendar{display:none}
+body[data-view="list"] .agenda{display:flex}
+body[data-view="list"] .legend{display:none}
+
+/* ---------- Mobil ---------- */
+@media (max-width:720px){
+  :root{--kw:26px}
+  .shell{padding:12px 12px 96px}
+  .masthead{gap:8px 12px;margin-bottom:8px}
+  .brand{flex:1 1 100%}
+  #tripName{font-size:25px}
+  .range{width:100%}
+  .range .field{flex:1 1 140px}
+  .rangesum{width:100%;padding-bottom:0}
+  .stats{gap:3px 12px;font-size:11.5px;margin-bottom:10px}
+  .toolbar{gap:6px;margin-bottom:10px}
+  .toolbar .btn,.seg button{padding:8px 12px}
+  #newEntry{display:none}
+  .fab{display:flex}
+  .aday>header{position:sticky;top:0;z-index:5}
+  .aday .items .chip{padding:10px 12px}
+  .scrim{padding:0;align-items:stretch}
+  .sheet{width:100%;border-radius:0;border:0;margin:0;min-height:100%}
+  .sheet .body{padding-bottom:24px}
+  .types{grid-template-columns:repeat(2,1fr)}
+  .row,.row.thirds{grid-template-columns:1fr}
+  .routehead .field{width:auto!important;flex:1 1 120px}
+  .day{min-height:64px;padding:calc(21px + var(--bars,0) * 15px) 3px 3px;
+    flex-direction:row;flex-wrap:wrap;align-content:flex-start;gap:3px}
+  .bars{top:19px}
+  .bar{height:13px;font-size:9px;padding:0 4px}
+  .bar .n{display:none}
+  .dkm{display:none}
+  .add{display:none}
+  .day .chip{width:auto;padding:0;border-radius:50%}
+  .day .chip .t{gap:0}
+  .day .chip .t .tm,.day .chip .t .tx,.day .chip .m{display:none}
+  .day .chip .t i{width:8px;height:8px}
+  .weeks.aspect{aspect-ratio:auto}
+  .weeks.aspect .week{flex:0 0 auto;min-height:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="gate" id="gate">
+  <div class="card">
+    <div class="mark">R</div>
+    <h1>Routenkalender</h1>
+    <p>Die Reiseplanung ist mit Benutzername und Passwort abgedeckt.</p>
+    <form id="gateForm">
+      <div class="field">
+        <label for="gUser">Benutzername</label>
+        <input id="gUser" autocomplete="username" autocapitalize="none" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="gPass">Passwort</label>
+        <input id="gPass" type="password" autocomplete="current-password">
+      </div>
+      <label class="keep"><input type="checkbox" id="gKeep"> Auf diesem Gerät angemeldet bleiben</label>
+      <div class="err" id="gErr">Benutzername oder Passwort stimmt nicht.</div>
+      <button class="btn primary" type="submit">Anmelden</button>
+    </form>
+  </div>
+</div>
+
+<div class="shell" id="app" hidden>
+  <header class="masthead">
+    <div class="brand">
+      <div class="eyebrow">Reiseplanung</div>
+      <input id="tripName" value="Reise" aria-label="Name der Reise">
+    </div>
+    <div class="range">
+      <div class="field">
+        <label for="start">Beginn</label>
+        <input type="date" id="start">
+      </div>
+      <div class="field">
+        <label for="end">Ende</label>
+        <input type="date" id="end">
+      </div>
+      <div class="rangesum" id="rangesum"></div>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="toolbar">
+    <button class="btn primary" id="newEntry" type="button">＋ Eintrag</button>
+    <div class="seg" role="group" aria-label="Ansicht">
+      <button id="viewGrid" type="button" aria-pressed="true">Kalender</button>
+      <button id="viewList" type="button" aria-pressed="false">Liste</button>
+    </div>
+    <button class="btn ghost" id="icsBtn" type="button">Kalenderdatei</button>
+    <button class="btn ghost" id="expBtn" type="button">Sichern</button>
+    <button class="btn ghost" id="impBtn" type="button">Laden</button>
+    <input type="file" id="impFile" accept="application/json,.json" hidden>
+    <div class="spacer"></div>
+    <div class="sync" id="sync" data-state="wait"><span class="dot"></span><span id="syncTxt">verbinde …</span></div>
+    <button class="btn ghost" id="lockBtn" type="button">Sperren</button>
+  </div>
+
+  <div class="calendar">
+    <div class="dow">
+      <div>KW</div><div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+    </div>
+    <div class="weeks" id="weeks"></div>
+  </div>
+
+  <div class="agenda" id="agenda"></div>
+
+  <div class="legend">
+    <span><i class="stayline"></i>Aufenthalt</span>
+    <span><i class="drive"></i>Fahrt</span>
+    <span><i class="event"></i>Termin</span>
+    <span><i class="note"></i>Notiz</span>
+  </div>
+
+  <p class="footnote" id="footnote">Kilometer und Fahrzeiten lassen sich in jedem Eintrag überschreiben.</p>
+</div>
+
+<button class="fab" id="fab" type="button" aria-label="Neuer Eintrag">＋</button>
+
+<div class="scrim" id="scrim" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet">
+    <header>
+      <h2 id="sheetTitle">Neuer Eintrag</h2>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="closeSheet" type="button" aria-label="Schließen">✕</button>
+    </header>
+    <div class="body">
+      <div class="types" id="types">
+        <button data-type="stay" class="ty" type="button"><span class="ic">▭</span>Aufenthalt</button>
+        <button data-type="drive" class="ty" type="button"><span class="ic">→</span>Fahrt</button>
+        <button data-type="event" class="ty" type="button"><span class="ic">◷</span>Termin</button>
+        <button data-type="note" class="ty" type="button"><span class="ic">✎</span>Notiz</button>
+      </div>
+
+      <div class="field full" id="fTitle">
+        <label for="eTitle">Bezeichnung</label>
+        <input id="eTitle" placeholder="z. B. Ankunft Kutaissi">
+      </div>
+
+      <div class="row" id="fPlaces">
+        <div class="field">
+          <label for="eFrom">Start</label>
+          <input id="eFrom" placeholder="Kutaissi" autocomplete="off">
+          <div class="sugg" id="sFrom"></div>
+        </div>
+        <div class="field">
+          <label for="eTo">Ziel</label>
+          <input id="eTo" placeholder="Zqaltubo" autocomplete="off">
+          <div class="sugg" id="sTo"></div>
+        </div>
+      </div>
+
+      <div class="field" id="fPlace">
+        <label for="ePlace">Ort</label>
+        <input id="ePlace" placeholder="Mestia" autocomplete="off">
+        <div class="sugg" id="sPlace"></div>
+      </div>
+
+      <div class="routebox" id="fRoute">
+        <div class="routehead">
+          <span class="lbl">Strecke</span>
+          <button class="btn" id="calcRoute" type="button">Strecke berechnen</button>
+          <div class="field" style="width:104px">
+            <label for="eKm">Kilometer</label>
+            <input id="eKm" inputmode="decimal" placeholder="0">
+          </div>
+          <div class="field" style="width:120px">
+            <label for="eMin">Fahrzeit (min)</label>
+            <input id="eMin" inputmode="numeric" placeholder="0">
+          </div>
+        </div>
+        <div class="routeout" id="routeOut"></div>
+      </div>
+
+      <div class="row thirds" id="fWhen">
+        <div class="field">
+          <label for="eDate" id="lDate">Datum</label>
+          <input type="date" id="eDate">
+        </div>
+        <div class="field" id="fTime">
+          <label for="eTime" id="lTime">Uhrzeit</label>
+          <input type="time" id="eTime">
+        </div>
+        <div class="field" id="fTime2">
+          <label for="eTime2">Ende</label>
+          <input type="time" id="eTime2">
+        </div>
+      </div>
+
+      <div class="row" id="fEndDate">
+        <div class="field">
+          <label for="eDate2">bis Datum</label>
+          <input type="date" id="eDate2">
+        </div>
+        <div class="field">
+          <label for="eTime3">bis Uhrzeit</label>
+          <input type="time" id="eTime3">
+        </div>
+      </div>
+
+      <div class="field full">
+        <label for="eNote">Notiz</label>
+        <textarea id="eNote" placeholder="Buchung, Kontakt, Hinweis …"></textarea>
+      </div>
+      <p class="hint" id="sheetHint"></p>
+    </div>
+    <footer>
+      <button class="btn primary" id="saveEntry" type="button">Speichern</button>
+      <button class="btn" id="cancelEntry" type="button">Abbrechen</button>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="deleteEntry" type="button" hidden>Löschen</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- Anmeldung ---------------- */
+var USER = "travelengineer", PASS = "doctor", AUTHK = "reisekalender-auth";
+var $ = function(id){ return document.getElementById(id); };
+
+function unlock(){
+  $("gate").style.display = "none";
+  $("app").hidden = false;
+  start();
+}
+function isUnlocked(){
+  try{
+    return sessionStorage.getItem(AUTHK) === "1" || localStorage.getItem(AUTHK) === "1";
+  }catch(e){ return false; }
+}
+$("gateForm").addEventListener("submit", function(ev){
+  ev.preventDefault();
+  var u = $("gUser").value.trim().toLowerCase(), p = $("gPass").value;
+  if(u === USER && p === PASS){
+    try{
+      sessionStorage.setItem(AUTHK, "1");
+      if($("gKeep").checked) localStorage.setItem(AUTHK, "1");
+    }catch(e){}
+    unlock();
+  } else {
+    $("gErr").classList.add("show");
+    $("gPass").value = "";
+    $("gPass").focus();
+  }
+});
+$("lockBtn").addEventListener("click", function(){
+  try{ localStorage.removeItem(AUTHK); sessionStorage.removeItem(AUTHK); }catch(e){}
+  location.reload();
+});
+
+/* ---------------- Datumshilfen ---------------- */
+var DOW = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+var MON = ["Jän.","Feb.","März","Apr.","Mai","Juni","Juli","Aug.","Sep.","Okt.","Nov.","Dez."];
+
+function D(s){ var p = String(s).split("-").map(Number); return new Date(p[0], p[1]-1, p[2], 12, 0, 0); }
+function iso(d){
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function addDays(s, n){ var d = D(s); d.setDate(d.getDate()+n); return iso(d); }
+function dowIdx(s){ return (D(s).getDay()+6)%7; }
+function mondayOf(s){ return addDays(s, -dowIdx(s)); }
+function diffDays(a, b){ return Math.round((D(b)-D(a))/86400000); }
+function isoWeek(s){
+  var d = D(s); d.setDate(d.getDate() + 3 - ((d.getDay()+6)%7));
+  var week1 = new Date(d.getFullYear(), 0, 4, 12, 0, 0);
+  return 1 + Math.round(((d - week1)/86400000 - 3 + ((week1.getDay()+6)%7))/7);
+}
+function fmtDate(s){ var d = D(s); return d.getDate() + ". " + MON[d.getMonth()]; }
+function fmtLong(s){ var d = D(s); return DOW[dowIdx(s)] + ", " + d.getDate() + ". " + MON[d.getMonth()]; }
+function hhmm(min){
+  min = Math.max(0, Math.round(min));
+  return Math.floor(min/60) + ":" + String(min%60).padStart(2,"0");
+}
+function toMin(t){ if(!t) return null; var p = t.split(":"); return (+p[0])*60 + (+p[1]); }
+function fromMin(m){ m = ((m%1440)+1440)%1440; return String(Math.floor(m/60)).padStart(2,"0") + ":" + String(m%60).padStart(2,"0"); }
+function num(v){ var n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : 0; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+
+/* ================= BEGINN STARTDATEN =================
+   Diese Reise wird beim ersten Aufruf geladen, solange im Browser noch
+   nichts gespeichert ist. Zum Leeren einfach ENTRIES auf [] setzen.      */
+var SEED = {
+  meta: { name:"Georgien 2026", start:"2026-09-26", end:"2026-10-10" },
+  entries: [
+    {id:"e01",type:"event",title:"Ankunft Kutaissi (Wizz Air)",date:"2026-09-26",time:"17:30",endTime:"18:30",place:"Flughafen Kutaissi",note:"Mietwagen 4x4 übernehmen"},
+    {id:"e02",type:"drive",from:"Flughafen Kutaissi",to:"Zqaltubo",date:"2026-09-26",time:"18:45",km:25,min:35},
+    {id:"e03",type:"stay",title:"Zqaltubo",place:"Zqaltubo",date:"2026-09-26",time:"19:30",endDate:"2026-09-28",endTime:"09:00",note:"Booking.com"},
+    {id:"e04",type:"note",title:"Lost Places Zqaltubo",date:"2026-09-27",note:"Sanatorien am Vormittag, da ruhiger"},
+    {id:"e05",type:"drive",from:"Zqaltubo",to:"Mestia",date:"2026-09-28",time:"09:00",km:195,min:285,note:"Bergstraße, Zeitpuffer einplanen"},
+    {id:"e06",type:"stay",title:"Mestia, Swanetien",place:"Mestia",date:"2026-09-28",time:"15:00",endDate:"2026-10-01",endTime:"08:30"},
+    {id:"e07",type:"event",title:"Tagesfahrt Uschguli",date:"2026-09-29",time:"07:30",endTime:"18:00",place:"Uschguli",note:"Nur mit 4x4, Schotterpiste"},
+    {id:"e08",type:"note",title:"Reservetag Swanetien",date:"2026-09-30",note:"Wandern oder Wetterpuffer"},
+    {id:"e09",type:"drive",from:"Mestia",to:"Nokalakevi",date:"2026-10-01",time:"08:30",km:160,min:240},
+    {id:"e10",type:"event",title:"Sulfur Spring Nokalakevi",date:"2026-10-01",time:"13:30",endTime:"15:30",place:"Nokalakevi"},
+    {id:"e11",type:"drive",from:"Nokalakevi",to:"Kutaissi",date:"2026-10-01",time:"16:00",km:75,min:95},
+    {id:"e12",type:"stay",title:"Kutaissi",place:"Kutaissi",date:"2026-10-01",time:"18:00",endDate:"2026-10-02",endTime:"08:30"},
+    {id:"e13",type:"drive",from:"Kutaissi",to:"Stepanzminda (Kazbegi)",date:"2026-10-02",time:"08:30",km:330,min:390,note:"Zwischenstopp Katskhi-Säule"},
+    {id:"e14",type:"event",title:"Katskhi-Säule (kurz)",date:"2026-10-02",time:"10:30",endTime:"11:15",place:"Katskhi"},
+    {id:"e15",type:"stay",title:"Kazbegi",place:"Stepanzminda",date:"2026-10-02",time:"17:30",endDate:"2026-10-04",endTime:"09:00"},
+    {id:"e16",type:"event",title:"Gergeti-Dreifaltigkeitskirche",date:"2026-10-03",time:"08:00",endTime:"13:00",place:"Gergeti",note:"Aufstieg zu Fuß oder 4x4"},
+    {id:"e17",type:"drive",from:"Stepanzminda",to:"Tiflis",date:"2026-10-04",time:"09:00",km:155,min:195,note:"Georgische Heerstraße"},
+    {id:"e18",type:"stay",title:"Tiflis",place:"Tiflis",date:"2026-10-04",time:"13:00",endDate:"2026-10-07",endTime:"09:00"},
+    {id:"e19",type:"event",title:"Drohnenregistrierung GCAA",date:"2026-10-05",time:"09:30",endTime:"12:00",place:"GCAA Hauptsitz, Tiflis",note:"Nur Hauptsitz Tiflis, keine Außenstelle in Kutaissi"},
+    {id:"e20",type:"drive",from:"Tiflis",to:"Sighnaghi",date:"2026-10-07",time:"09:00",km:110,min:135},
+    {id:"e21",type:"stay",title:"Sighnaghi",place:"Sighnaghi",date:"2026-10-07",time:"12:00",endDate:"2026-10-08",endTime:"08:30",note:"Kurzbesuch, eine Nacht"},
+    {id:"e22",type:"drive",from:"Sighnaghi",to:"Borjomi",date:"2026-10-08",time:"08:30",km:255,min:300,note:"evtl. Abstecher Tabatskuri-See"},
+    {id:"e23",type:"stay",title:"Borjomi",place:"Borjomi",date:"2026-10-08",time:"16:00",endDate:"2026-10-09",endTime:"08:30"},
+    {id:"e24",type:"drive",from:"Borjomi",to:"Kutaissi",date:"2026-10-09",time:"08:30",km:185,min:270,note:"Variante Zekari-Pass nur bei gutem Wetter"},
+    {id:"e25",type:"stay",title:"Kutaissi, flughafennah",place:"Kutaissi",date:"2026-10-09",time:"14:00",endDate:"2026-10-10",endTime:"03:30",note:"Früher Rückflug"},
+    {id:"e26",type:"event",title:"Rückflug ab Kutaissi",date:"2026-10-10",time:"06:00",endTime:"07:00",place:"Flughafen Kutaissi",note:"Mietwagen rechtzeitig zurückgeben"}
+  ]
+};
+/* ================= ENDE STARTDATEN ================= */
+
+/* ---------------- Zustand ---------------- */
+var today = iso(new Date());
+var state = { meta:{ name:"Reise", start: mondayOf(today), end: addDays(mondayOf(today), 13) }, entries:{} };
+var db = null, sampleFn = null, downloads = null;
+var LSK = "reisekalender-v1";
+var started = false;
+
+function seedState(){
+  var s = { meta:{ name:SEED.meta.name, start:SEED.meta.start, end:SEED.meta.end }, entries:{} };
+  SEED.entries.forEach(function(e){ s.entries[e.id] = JSON.parse(JSON.stringify(e)); });
+  return s;
+}
+function saveLocal(){ try{ localStorage.setItem(LSK, JSON.stringify(state)); }catch(e){} }
+function loadLocal(){
+  try{
+    var raw = localStorage.getItem(LSK);
+    if(raw){
+      var p = JSON.parse(raw);
+      if(p && p.meta){ state = p; state.entries = state.entries || {}; return true; }
+    }
+  }catch(e){}
+  state = seedState();
+  saveLocal();
+  return false;
+}
+function saveMeta(){
+  if(db) db.doc("trip/meta").set({ name: state.meta.name, start: state.meta.start, end: state.meta.end }).catch(showDbError);
+  else saveLocal();
+}
+function saveEntry(e){
+  if(db) db.doc("entries/" + e.id).set(e).catch(showDbError);
+  else { state.entries[e.id] = e; saveLocal(); render(); }
+}
+function removeEntry(id){
+  if(db) db.doc("entries/" + id).delete().catch(showDbError);
+  else { delete state.entries[id]; saveLocal(); render(); }
+}
+function showDbError(err){
+  $("syncTxt").textContent = (err && err.code === "revoked") ? "Zugriff beendet" : "nicht gespeichert";
+  $("sync").dataset.state = "local";
+}
+function newId(){ return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+/* ---------------- Ableitungen ---------------- */
+function entryList(){ return Object.keys(state.entries).map(function(k){ return state.entries[k]; }); }
+function pointEntriesOn(day){
+  return entryList().filter(function(e){ return e.type !== "stay" && e.date === day; })
+    .sort(function(a,b){
+      var ta = a.time ? toMin(a.time) : 1e9, tb = b.time ? toMin(b.time) : 1e9;
+      if(ta !== tb) return ta - tb;
+      return String(a.title||"").localeCompare(String(b.title||""), "de");
+    });
+}
+function staysOverlapping(from, to){
+  return entryList().filter(function(e){
+    return e.type === "stay" && e.date && e.endDate && e.date <= to && e.endDate >= from;
+  }).sort(function(a,b){
+    if(a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return diffDays(b.date, b.endDate) - diffDays(a.date, a.endDate);
+  });
+}
+function kmOn(day){
+  return pointEntriesOn(day).reduce(function(s,e){ return s + (e.type==="drive" ? num(e.km) : 0); }, 0);
+}
+function tripDays(){
+  var out = [], d = state.meta.start;
+  while(d <= state.meta.end){ out.push(d); d = addDays(d, 1); }
+  return out;
+}
+
+/* ---------------- Rendern ---------------- */
+function render(){
+  $("tripName").value = state.meta.name;
+  $("start").value = state.meta.start;
+  $("end").value = state.meta.end;
+  renderRangeSummary();
+  renderStats();
+  renderWeeks();
+  renderAgenda();
+}
+function renderRangeSummary(){
+  var n = diffDays(state.meta.start, state.meta.end) + 1;
+  var w = Math.ceil((diffDays(mondayOf(state.meta.start), addDays(mondayOf(state.meta.end),6)) + 1)/7);
+  $("rangesum").textContent = n + " Tage · " + w + (w === 1 ? " Woche" : " Wochen");
+}
+function renderStats(){
+  var days = tripDays(), km = 0, min = 0, drives = 0, nights = 0;
+  entryList().forEach(function(e){
+    if(e.type === "drive"){ km += num(e.km); min += num(e.min); drives++; }
+    if(e.type === "stay") nights += Math.max(0, diffDays(e.date, e.endDate));
+  });
+  var open = days.filter(function(d){ return pointEntriesOn(d).length === 0 && staysOverlapping(d,d).length === 0; }).length;
+  var items = [
+    [days.length, "Reisetage"],
+    [Math.round(km).toLocaleString("de-AT"), "km"],
+    [hhmm(min) + " h", "Fahrzeit"],
+    [drives, drives === 1 ? "Fahrt" : "Fahrten"],
+    [nights, nights === 1 ? "Nächtigung" : "Nächtigungen"],
+    [open, open === 1 ? "Tag ohne Eintrag" : "Tage ohne Eintrag"]
+  ];
+  $("stats").innerHTML = items.map(function(it){
+    return "<span><b>" + esc(it[0]) + "</b> " + esc(it[1]) + "</span>";
+  }).join("");
+}
+
+function renderWeeks(){
+  var host = $("weeks");
+  var gridStart = mondayOf(state.meta.start);
+  var gridEnd = addDays(mondayOf(state.meta.end), 6);
+  var weeks = [];
+  for(var d = gridStart; d <= gridEnd; d = addDays(d, 7)) weeks.push(d);
+  if(weeks.length > 60) weeks = weeks.slice(0, 60);
+
+  host.classList.toggle("aspect", weeks.length <= 6);
+  host.innerHTML = "";
+
+  weeks.forEach(function(wStart){
+    var wEnd = addDays(wStart, 6);
+    var week = document.createElement("div");
+    week.className = "week";
+
+    var kw = document.createElement("div");
+    kw.className = "kw";
+    kw.innerHTML = "<span>" + isoWeek(wStart) + "</span>";
+    week.appendChild(kw);
+
+    var body = document.createElement("div");
+    body.className = "wbody";
+
+    var bars = staysOverlapping(wStart, wEnd).map(function(e){
+      var s = e.date < wStart ? wStart : e.date;
+      var t = e.endDate > wEnd ? wEnd : e.endDate;
+      return { e:e, col: diffDays(wStart, s), span: diffDays(s, t) + 1,
+               startsHere: e.date >= wStart, endsHere: e.endDate <= wEnd };
+    });
+    var lanes = [];
+    bars.forEach(function(b){
+      var i = 0;
+      while(lanes[i] !== undefined && lanes[i] > b.col) i++;
+      lanes[i] = b.col + b.span;
+      b.lane = i;
+    });
+    var laneH = window.innerWidth <= 720 ? 15 : 20;
+
+    var barsEl = document.createElement("div");
+    barsEl.className = "bars";
+    bars.forEach(function(b){
+      var el = document.createElement("button");
+      el.type = "button";
+      el.className = "bar" + (b.startsHere ? " s" : "") + (b.endsHere ? " e" : "");
+      el.style.left = (b.col/7*100) + "%";
+      el.style.width = (b.span/7*100) + "%";
+      el.style.top = (b.lane*laneH) + "px";
+      var nights = Math.max(0, diffDays(b.e.date, b.e.endDate));
+      var label = (b.startsHere ? "" : "… ") + titleOf(b.e);
+      el.innerHTML = "<span>" + esc(label) + "</span>" +
+        (b.startsHere && nights ? '<span class="n">' + nights + " Nä.</span>" : "");
+      el.title = titleOf(b.e) + " · " + fmtLong(b.e.date) + (b.e.time ? " " + b.e.time : "") +
+        " – " + fmtLong(b.e.endDate) + (b.e.endTime ? " " + b.e.endTime : "");
+      el.addEventListener("click", function(){ openSheet(b.e.id); });
+      barsEl.appendChild(el);
+    });
+    body.appendChild(barsEl);
+
+    var daysEl = document.createElement("div");
+    daysEl.className = "days";
+    for(var i = 0; i < 7; i++) daysEl.appendChild(dayCell(addDays(wStart, i), i, lanes.length));
+    body.appendChild(daysEl);
+    week.appendChild(body);
+    host.appendChild(week);
+  });
+}
+
+function dayCell(day, idx, laneCount){
+  var cell = document.createElement("div");
+  var inRange = day >= state.meta.start && day <= state.meta.end;
+  cell.className = "day" + (inRange ? "" : " out") + (day === today ? " today" : "");
+  cell.style.setProperty("--bars", laneCount);
+
+  var dnum = document.createElement("div");
+  dnum.className = "dnum";
+  var dt = D(day);
+  dnum.innerHTML = '<span class="n">' + dt.getDate() + "</span>";
+  if(dt.getDate() === 1 || (idx === 0 && dt.getDate() <= 7)){
+    cell.classList.add("first");
+    dnum.setAttribute("data-mon", MON[dt.getMonth()]);
+  }
+  cell.appendChild(dnum);
+
+  var km = kmOn(day);
+  if(km > 0){
+    var k = document.createElement("div");
+    k.className = "dkm";
+    k.textContent = Math.round(km) + " km";
+    cell.appendChild(k);
+  }
+
+  var add = document.createElement("button");
+  add.className = "add";
+  add.type = "button";
+  add.textContent = "+";
+  add.setAttribute("aria-label", "Eintrag am " + fmtLong(day));
+  add.addEventListener("click", function(ev){ ev.stopPropagation(); openSheet(null, day); });
+  cell.appendChild(add);
+
+  pointEntriesOn(day).forEach(function(e){ cell.appendChild(chip(e)); });
+  return cell;
+}
+
+function chip(e){
+  var b = document.createElement("button");
+  b.className = "chip " + e.type;
+  b.type = "button";
+  var t = document.createElement("span");
+  t.className = "t";
+  t.innerHTML = "<i></i>" + (e.time ? '<span class="tm">' + esc(e.time) + "</span>" : "") +
+    '<span class="tx">' + esc(titleOf(e)) + "</span>";
+  b.appendChild(t);
+  var m = metaLine(e);
+  if(m){
+    var s = document.createElement("span");
+    s.className = "m";
+    s.textContent = m;
+    b.appendChild(s);
+  }
+  b.title = titleOf(e) + (m ? " · " + m : "");
+  b.addEventListener("click", function(){ openSheet(e.id); });
+  return b;
+}
+
+function shortPlace(s){ return String(s == null ? "" : s).split(",")[0].trim(); }
+function titleOf(e){
+  if(e.title) return e.title;
+  if(e.type === "drive") return (shortPlace(e.from) || "?") + " → " + (shortPlace(e.to) || "?");
+  if(e.type === "stay") return shortPlace(e.place) || "Aufenthalt";
+  return e.type === "note" ? "Notiz" : "Termin";
+}
+function metaLine(e){
+  var parts = [];
+  if(e.type === "drive"){
+    if(num(e.km)) parts.push(Math.round(num(e.km)) + " km");
+    if(num(e.min)) parts.push(hhmm(num(e.min)) + " h");
+    if(e.time && num(e.min)) parts.push("an " + fromMin(toMin(e.time) + num(e.min)));
+  } else if(e.type === "event"){
+    if(e.endTime) parts.push("bis " + e.endTime);
+    if(e.place) parts.push(shortPlace(e.place));
+  } else if(e.type === "stay"){
+    parts.push(fmtDate(e.date) + (e.time ? " " + e.time : "") + " – " + fmtDate(e.endDate) + (e.endTime ? " " + e.endTime : ""));
+    parts.push(Math.max(0, diffDays(e.date, e.endDate)) + " Nächte");
+  } else if(e.type === "note"){
+    if(e.note) parts.push(e.note.split("\n")[0]);
+  }
+  return parts.join(" · ");
+}
+
+function renderAgenda(){
+  var host = $("agenda");
+  host.innerHTML = "";
+  tripDays().forEach(function(day){
+    var card = document.createElement("div");
+    card.className = "aday" + (day === today ? " is-today" : "");
+    card.id = "d" + day;
+    var stays = staysOverlapping(day, day), items = pointEntriesOn(day), km = kmOn(day);
+
+    var head = document.createElement("header");
+    head.innerHTML = "<h3>" + esc(fmtLong(day)) + "</h3>" +
+      '<span class="sub">Tag ' + (diffDays(state.meta.start, day) + 1) + "</span>" +
+      (km ? '<span class="km">' + Math.round(km) + " km</span>" : "");
+    card.appendChild(head);
+
+    var list = document.createElement("div");
+    list.className = "items";
+    stays.forEach(function(e){ list.appendChild(chip(e)); });
+    items.forEach(function(e){ list.appendChild(chip(e)); });
+    if(!stays.length && !items.length){
+      var em = document.createElement("div");
+      em.className = "empty";
+      em.textContent = "Noch nichts geplant.";
+      list.appendChild(em);
+    }
+    card.appendChild(list);
+
+    var foot = document.createElement("footer");
+    var add = document.createElement("button");
+    add.className = "btn ghost";
+    add.type = "button";
+    add.textContent = "＋ Eintrag an diesem Tag";
+    add.addEventListener("click", function(){ openSheet(null, day); });
+    foot.appendChild(add);
+    card.appendChild(foot);
+    host.appendChild(card);
+  });
+}
+
+/* ---------------- Ortsvorschläge ---------------- */
+var BASE_PLACES = [
+  "Kutaissi","Flughafen Kutaissi","Zqaltubo","Mestia","Uschguli","Nokalakevi","Katskhi",
+  "Stepanzminda (Kazbegi)","Gergeti","Tiflis","Sighnaghi","Borjomi","Tabatskuri-See",
+  "Zekari-Pass","Datvisjvari-Pass","Batumi","Gori","Uplisziche"
+];
+function knownPlaces(){
+  var seen = {}, out = [];
+  entryList().forEach(function(e){
+    [e.from, e.to, e.place].forEach(function(p){
+      p = String(p || "").trim();
+      if(p && !seen[p.toLowerCase()]){ seen[p.toLowerCase()] = 1; out.push(p); }
+    });
+  });
+  BASE_PLACES.forEach(function(p){
+    if(!seen[p.toLowerCase()]){ seen[p.toLowerCase()] = 1; out.push(p); }
+  });
+  return out;
+}
+function attachSuggest(inputId, boxId){
+  var input = $(inputId), box = $(boxId);
+  function paint(){
+    var q = input.value.trim().toLowerCase();
+    var hits = knownPlaces().filter(function(p){
+      return !q || (p.toLowerCase().indexOf(q) !== -1 && p.toLowerCase() !== q);
+    }).slice(0, 6);
+    var ph = input.getAttribute("placeholder");
+    if(ph && hits.indexOf(ph) === -1) hits = [ph].concat(hits).slice(0, 6);
+    box.innerHTML = "";
+    var lbl = document.createElement("span");
+    lbl.className = "lbl";
+    lbl.textContent = q ? "Passend" : "Vorschläge";
+    box.appendChild(lbl);
+    hits.forEach(function(p){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = p;
+      if(p === ph) b.className = "pin";
+      b.addEventListener("mousedown", function(ev){ ev.preventDefault(); });
+      b.addEventListener("click", function(){ input.value = p; paint(); input.focus(); });
+      box.appendChild(b);
+    });
+  }
+  input.addEventListener("input", paint);
+  input.addEventListener("focus", paint);
+  return paint;
+}
+var paintFrom = attachSuggest("eFrom", "sFrom");
+var paintTo = attachSuggest("eTo", "sTo");
+var paintPlace = attachSuggest("ePlace", "sPlace");
+
+/* ---------------- Dialog ---------------- */
+var editing = null, editType = "drive";
+
+function setType(t){
+  editType = t;
+  Array.prototype.forEach.call(document.querySelectorAll("#types .ty"), function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.type === t));
+  });
+  $("fPlaces").style.display = t === "drive" ? "" : "none";
+  $("fRoute").style.display  = t === "drive" ? "" : "none";
+  $("fPlace").style.display  = (t === "stay" || t === "event") ? "" : "none";
+  $("fEndDate").style.display = t === "stay" ? "" : "none";
+  $("fTime").style.display   = t === "note" ? "none" : "";
+  $("fTime2").style.display  = t === "event" ? "" : "none";
+  $("lTime").textContent = t === "drive" ? "Abfahrt" : (t === "stay" ? "ab Uhrzeit" : "Beginn");
+  $("lDate").textContent = t === "stay" ? "von Datum" : "Datum";
+  $("eTitle").placeholder = t === "drive" ? "leer lassen für „Start → Ziel“"
+    : t === "stay" ? "z. B. Guesthouse Uschguli"
+    : t === "event" ? "z. B. Ankunft Flug W6 2417" : "z. B. Tanken nicht vergessen";
+  $("sheetHint").textContent = t === "drive"
+    ? "Kilometer und Fahrzeit gelten für die Straßenverbindung. Die Ankunftszeit wird aus Abfahrt plus Fahrzeit gerechnet."
+    : t === "stay" ? "Der Aufenthalt wird als durchgehender Balken über alle betroffenen Tage gezeichnet."
+    : t === "event" ? "Ein Termin an einem Tag, mit oder ohne Endzeit."
+    : "Eine Notiz ohne Uhrzeit, sie steht ganz oben am Tag.";
+  paintFrom(); paintTo(); paintPlace();
+}
+
+function openSheet(id, day){
+  editing = id ? state.entries[id] : null;
+  var e = editing || { type:"drive", date: day || state.meta.start };
+  $("sheetTitle").textContent = editing ? "Eintrag bearbeiten" : "Neuer Eintrag";
+  $("deleteEntry").hidden = !editing;
+  $("eTitle").value = e.title || "";
+  $("eFrom").value = e.from || "";
+  $("eTo").value = e.to || "";
+  $("ePlace").value = e.place || "";
+  $("eKm").value = e.km != null ? e.km : "";
+  $("eMin").value = e.min != null ? e.min : "";
+  $("eDate").value = e.date || day || state.meta.start;
+  $("eTime").value = e.time || "";
+  $("eTime2").value = e.type === "event" ? (e.endTime || "") : "";
+  $("eDate2").value = e.endDate || addDays(e.date || day || state.meta.start, 1);
+  $("eTime3").value = e.type === "stay" ? (e.endTime || "") : "";
+  $("eNote").value = e.note || "";
+  $("routeOut").innerHTML = e.route ? esc(e.route) : "";
+  setType(e.type || "drive");
+  $("scrim").classList.add("open");
+  setTimeout(function(){ $("eTitle").focus(); }, 30);
+}
+function closeSheet(){ $("scrim").classList.remove("open"); editing = null; }
+
+function collect(){
+  var e = {
+    id: editing ? editing.id : newId(),
+    type: editType,
+    title: $("eTitle").value.trim(),
+    date: $("eDate").value || state.meta.start,
+    note: $("eNote").value.trim()
+  };
+  if(editType === "drive"){
+    e.from = $("eFrom").value.trim();
+    e.to = $("eTo").value.trim();
+    e.km = num($("eKm").value);
+    e.min = num($("eMin").value);
+    e.time = $("eTime").value || "";
+    e.route = $("routeOut").textContent.trim();
+  } else if(editType === "stay"){
+    e.place = $("ePlace").value.trim();
+    e.time = $("eTime").value || "";
+    e.endDate = $("eDate2").value || e.date;
+    e.endTime = $("eTime3").value || "";
+    if(e.endDate < e.date) e.endDate = e.date;
+  } else if(editType === "event"){
+    e.place = $("ePlace").value.trim();
+    e.time = $("eTime").value || "";
+    e.endTime = $("eTime2").value || "";
+  }
+  return e;
+}
+
+/* ---------------- Strecke: OSM direkt, sonst Schätzung ---------------- */
+var GEOK = "reisekalender-geo", geoCache = {};
+try{ geoCache = JSON.parse(localStorage.getItem(GEOK) || "{}"); }catch(e){ geoCache = {}; }
+
+function geocode(q){
+  var k = q.trim().toLowerCase();
+  if(geoCache[k]) return Promise.resolve(geoCache[k]);
+  var url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=de&q=" + encodeURIComponent(q);
+  return fetch(url, { headers:{ "Accept":"application/json" } }).then(function(r){
+    if(!r.ok) throw { code:"geo_http" };
+    return r.json();
+  }).then(function(j){
+    if(!j || !j.length) throw { code:"geo_none", place:q };
+    var p = { lat:+j[0].lat, lon:+j[0].lon, name:j[0].display_name };
+    geoCache[k] = p;
+    try{ localStorage.setItem(GEOK, JSON.stringify(geoCache)); }catch(e){}
+    return p;
+  });
+}
+function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+function osrmRoute(from, to){
+  var a;
+  return geocode(from).then(function(p){
+    a = p;
+    return geoCache[to.trim().toLowerCase()] ? null : wait(1100);
+  }).then(function(){
+    return geocode(to);
+  }).then(function(b){
+    var u = "https://router.project-osrm.org/route/v1/driving/" +
+      a.lon + "," + a.lat + ";" + b.lon + "," + b.lat + "?overview=false&alternatives=false";
+    return fetch(u).then(function(r){
+      if(!r.ok) throw { code:"osrm_http" };
+      return r.json();
+    }).then(function(j){
+      if(!j.routes || !j.routes.length) throw { code:"osrm_none" };
+      return {
+        km: j.routes[0].distance/1000,
+        minuten: j.routes[0].duration/60,
+        route: "OSRM über OpenStreetMap · " + shortPlace(a.name) + " → " + shortPlace(b.name)
+      };
+    });
+  });
+}
+function claudeRoute(from, to){
+  return sampleFn.json(
+    "Du bist ein Routenplaner für Straßenrouten (OpenStreetMap-Straßennetz, PKW). " +
+    "Schätze für die Fahrt von \"" + from + "\" nach \"" + to + "\" die Strecke entlang der Straße in Kilometern " +
+    "und die reine Fahrzeit in Minuten ohne Pausen. Berücksichtige Gebirgs-, Schotter- und Passstrecken realistisch. " +
+    "Antworte nur mit JSON in der Form " +
+    "{\"km\": 123, \"minuten\": 150, \"route\": \"kurzer Hinweis zur Streckenführung und Straßenqualität, max. 90 Zeichen\"}.",
+    { modelTier:"default", cache:{ gcTime:86400000 } }
+  ).then(function(r){
+    return { km:num(r && r.km), minuten:num(r && r.minuten), route:"Schätzung · " + (r && r.route ? r.route : "Straßenverbindung") };
+  });
+}
+function calcRoute(){
+  var from = $("eFrom").value.trim(), to = $("eTo").value.trim(), out = $("routeOut"), btn = $("calcRoute");
+  if(!from || !to){ out.textContent = "Bitte Start und Ziel eintragen."; return; }
+  btn.disabled = true;
+  out.textContent = "wird berechnet …";
+  var job = sampleFn ? claudeRoute(from, to) : osrmRoute(from, to);
+  job.then(function(r){
+    if(r.km > 0) $("eKm").value = Math.round(r.km);
+    if(r.minuten > 0) $("eMin").value = Math.round(r.minuten);
+    out.textContent = r.route;
+  }).catch(function(err){
+    var code = err && err.code;
+    out.textContent =
+      code === "geo_none" ? "Ort „" + (err.place || "") + "“ nicht gefunden, bitte genauer schreiben, z. B. mit Land." :
+      code === "not_granted" || code === "sampling_disabled" ? "Berechnung nicht freigegeben, Werte bitte eintragen." :
+      code === "rate_limited" ? "Gerade zu viele Anfragen, bitte in einer Minute nochmal." :
+      "Berechnung fehlgeschlagen, Werte bitte eintragen.";
+  }).then(function(){ btn.disabled = false; });
+}
+
+/* ---------------- Dateien ---------------- */
+function saveFile(name, mime, data){
+  if(downloads){ downloads.save({ filename:name, data:data }).catch(function(){}); return; }
+  try{
+    var blob = new Blob([data], { type:mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 2000);
+  }catch(e){}
+}
+function pad(n){ return String(n).padStart(2,"0"); }
+function icsStamp(date, time){
+  var d = D(date), p = (time || "09:00").split(":");
+  return "" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + "T" + pad(+p[0]) + pad(+p[1]) + "00";
+}
+function icsDay(date){ var d = D(date); return "" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()); }
+function buildICS(){
+  var L = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Routenkalender//DE","CALSCALE:GREGORIAN"];
+  entryList().forEach(function(e){
+    var desc = [];
+    L.push("BEGIN:VEVENT", "UID:" + e.id + "@routenkalender", "SUMMARY:" + titleOf(e).replace(/\r?\n/g," "));
+    if(e.type === "stay"){
+      L.push("DTSTART:" + icsStamp(e.date, e.time || "14:00"));
+      L.push("DTEND:" + icsStamp(e.endDate, e.endTime || "10:00"));
+      if(e.place) L.push("LOCATION:" + e.place);
+    } else if(e.type === "drive"){
+      var st = e.time || "09:00";
+      L.push("DTSTART:" + icsStamp(e.date, st));
+      L.push("DTEND:" + icsStamp(e.date, fromMin(toMin(st) + (num(e.min) || 60))));
+      desc.push((Math.round(num(e.km)) || "?") + " km", hhmm(num(e.min)) + " h");
+      if(e.route) desc.push(e.route);
+    } else if(e.type === "event"){
+      L.push("DTSTART:" + icsStamp(e.date, e.time || "09:00"));
+      L.push("DTEND:" + icsStamp(e.date, e.endTime || fromMin(toMin(e.time || "09:00") + 60)));
+      if(e.place) L.push("LOCATION:" + e.place);
+    } else {
+      L.push("DTSTART;VALUE=DATE:" + icsDay(e.date));
+      L.push("DTEND;VALUE=DATE:" + icsDay(addDays(e.date, 1)));
+    }
+    if(e.note) desc.push(e.note);
+    if(desc.length) L.push("DESCRIPTION:" + desc.join(" | ").replace(/\r?\n/g," "));
+    L.push("END:VEVENT");
+  });
+  L.push("END:VCALENDAR");
+  return L.join("\r\n");
+}
+function fileStem(){ return (state.meta.name || "Reise").replace(/[^\wÄÖÜäöüß\-]+/g,"_"); }
+
+/* ---------------- Ereignisse ---------------- */
+$("tripName").addEventListener("change", function(){
+  state.meta.name = this.value.trim() || "Reise";
+  document.title = state.meta.name;
+  saveMeta();
+});
+$("start").addEventListener("change", function(){
+  state.meta.start = this.value;
+  if(state.meta.end < state.meta.start) state.meta.end = addDays(state.meta.start, 13);
+  saveMeta(); render();
+});
+$("end").addEventListener("change", function(){
+  state.meta.end = this.value;
+  if(state.meta.end < state.meta.start) state.meta.start = this.value;
+  saveMeta(); render();
+});
+$("newEntry").addEventListener("click", function(){ openSheet(null, state.meta.start); });
+$("fab").addEventListener("click", function(){
+  var d = today >= state.meta.start && today <= state.meta.end ? today : state.meta.start;
+  openSheet(null, d);
+});
+$("closeSheet").addEventListener("click", closeSheet);
+$("cancelEntry").addEventListener("click", closeSheet);
+$("scrim").addEventListener("click", function(ev){ if(ev.target === this) closeSheet(); });
+document.addEventListener("keydown", function(ev){ if(ev.key === "Escape") closeSheet(); });
+Array.prototype.forEach.call(document.querySelectorAll("#types .ty"), function(b){
+  b.addEventListener("click", function(){ setType(b.dataset.type); });
+});
+$("calcRoute").addEventListener("click", calcRoute);
+$("saveEntry").addEventListener("click", function(){
+  var e = collect();
+  state.entries[e.id] = e;
+  saveEntry(e);
+  render();
+  closeSheet();
+});
+$("deleteEntry").addEventListener("click", function(){
+  if(!editing) return;
+  var id = editing.id;
+  delete state.entries[id];
+  removeEntry(id);
+  render();
+  closeSheet();
+});
+function setView(v){
+  document.body.dataset.view = v;
+  $("viewGrid").setAttribute("aria-pressed", String(v === "grid"));
+  $("viewList").setAttribute("aria-pressed", String(v === "list"));
+}
+$("viewGrid").addEventListener("click", function(){ setView("grid"); renderWeeks(); });
+$("viewList").addEventListener("click", function(){ setView("list"); });
+var lastNarrow = window.innerWidth <= 720;
+window.addEventListener("resize", function(){
+  var narrow = window.innerWidth <= 720;
+  if(narrow !== lastNarrow){ lastNarrow = narrow; renderWeeks(); }
+});
+
+$("icsBtn").addEventListener("click", function(){
+  saveFile(fileStem() + ".ics", "text/calendar;charset=utf-8", buildICS());
+});
+$("expBtn").addEventListener("click", function(){
+  saveFile(fileStem() + ".json", "application/json;charset=utf-8", JSON.stringify(state, null, 2));
+});
+$("impBtn").addEventListener("click", function(){ $("impFile").click(); });
+$("impFile").addEventListener("change", function(){
+  var f = this.files && this.files[0];
+  if(!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    try{
+      var p = JSON.parse(String(rd.result));
+      if(!p || !p.meta || !p.entries) throw new Error("format");
+      state = { meta:p.meta, entries:p.entries };
+      if(db){
+        db.doc("trip/meta").set(state.meta).catch(function(){});
+        Object.keys(state.entries).forEach(function(k){
+          db.doc("entries/" + k).set(state.entries[k]).catch(function(){});
+        });
+      } else saveLocal();
+      render();
+    }catch(e){
+      $("footnote").textContent = "Die Datei konnte nicht gelesen werden, es wird eine Sicherung dieser Seite erwartet.";
+    }
+  };
+  rd.readAsText(f);
+  this.value = "";
+});
+
+/* ---------------- Start ---------------- */
+function start(){
+  if(started) return;
+  started = true;
+  loadLocal();
+  render();
+  setView(window.innerWidth <= 720 ? "list" : "grid");
+
+  if(window.claude && typeof window.claude.use === "function"){
+    window.claude.use("db").then(function(d){
+      if(!d){
+        $("sync").dataset.state = "local";
+        $("syncTxt").textContent = "nur auf diesem Gerät";
+        return;
+      }
+      db = d;
+      $("sync").dataset.state = "db";
+      $("syncTxt").textContent = "geteilt gespeichert";
+      d.doc("trip/meta").onSnapshot(function(snap){
+        if(snap.exists){
+          var m = snap.data();
+          state.meta = { name:m.name || "Reise", start:m.start || state.meta.start, end:m.end || state.meta.end };
+          document.title = state.meta.name;
+        } else {
+          d.doc("trip/meta").set(state.meta).catch(function(){});
+        }
+        render();
+      }, showDbError);
+      d.collection("entries").onSnapshot(function(snap){
+        var next = {};
+        snap.docs.forEach(function(doc){
+          var v = doc.data() || {};
+          v.id = doc.id;
+          next[doc.id] = v;
+        });
+        state.entries = next;
+        render();
+      }, showDbError);
+    });
+    window.claude.use("sample").then(function(s){ sampleFn = s; });
+    window.claude.use("downloads").then(function(dl){ downloads = dl; });
+  } else {
+    $("sync").dataset.state = "local";
+    $("syncTxt").textContent = "auf diesem Gerät gespeichert";
+    $("footnote").textContent = "Strecke und Fahrzeit kommen von OpenStreetMap (Nominatim und OSRM) und sind überschreibbar. Die Reisedaten liegen nur im Speicher dieses Browsers, mit „Sichern“ und „Laden“ überträgst du sie auf ein anderes Gerät.";
+  }
+}
+
+if(isUnlocked()) unlock();
+else setTimeout(function(){ $("gUser").focus(); }, 60);
+})();
+</script>
+
+</body>
+</html>
