@@ -44,10 +44,15 @@ als Grabstein vermerkt und taucht daher nicht vom anderen Gerät wieder auf.
 4. Im Worker unter **Settings → Bindings → Add → KV namespace**:
    Variablenname `TRIP`, Namespace `routenkalender`.
 5. Unter **Settings → Variables and Secrets** anlegen:
-   - `TRIP_USER` (Secret) – der Benutzername
-   - `TRIP_PASSWORD` (Secret) – das Passwort zum Bearbeiten
-   - `TRIP_PASSWORD_VIEW` (Secret, freiwillig) – Passwort nur zum Ansehen
    - `ALLOWED_ORIGIN` (Text) – `https://travelengineer.github.io`
+   - `TRIP_USER` (Secret) – der Benutzername
+   - `TRIP_PASSWORD` (Secret, freiwillig) – das Passwort zum Bearbeiten
+   - `TRIP_PASSWORD_VIEW` (Secret, freiwillig) – Passwort nur zum Ansehen
+
+   Ohne `TRIP_PASSWORD` gilt das Passwort der **ersten Anmeldung**: der Worker
+   merkt sich davon einen Hash und verlangt ihn ab dann. Also gleich nach dem
+   Veröffentlichen einmal anmelden. Ein später gesetztes `TRIP_PASSWORD` hat
+   immer Vorrang.
 6. Die Adresse des Workers steht in `index.html` bei `var SYNC_URL`. Eingetragen
    ist `https://routenkalender.lukasschwarz.workers.dev`. Eine andere Adresse lässt
    sich je Gerät auch über `?sync=https://….workers.dev` setzen, sie bleibt dann

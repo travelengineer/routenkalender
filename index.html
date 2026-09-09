@@ -642,7 +642,9 @@ function tryLogin(u, p){
       return pwHash(u, p).then(function(h){
         var stored = "";
         try{ stored = localStorage.getItem(PWK) || ""; }catch(e){}
-        return h && stored && h === stored ? "offline" : null;
+        if(h && stored && h === stored) return "offline";
+        if(!stored) throw { code:"unreachable" };
+        return null;
       });
     });
 }
@@ -672,9 +674,11 @@ $("gateForm").addEventListener("submit", function(ev){
     if(r !== "offline") pwHash(u, p).then(function(h){ try{ localStorage.setItem(PWK, h); }catch(e){} });
     unlock();
   }).catch(function(err){
-    $("gErr").textContent = (err && err.code === "no_backend")
-      ? "Die Ablage antwortet noch nicht. Im Cloudflare Worker fehlt der Code aus worker.js."
-      : "Anmeldung derzeit nicht möglich, bitte später nochmal.";
+    var code = err && err.code;
+    $("gErr").textContent =
+      code === "no_backend" ? "Die Ablage antwortet, liefert aber keine Daten. Im Worker fehlt der Code aus worker.js." :
+      code === "unreachable" ? "Die Ablage ist noch nicht erreichbar. Bei einer frisch angelegten Adresse dauert das Zertifikat ein paar Minuten, bitte gleich nochmal versuchen." :
+      "Anmeldung derzeit nicht möglich, bitte später nochmal.";
     $("gErr").classList.add("show");
   }).then(function(){
     btn.disabled = false;

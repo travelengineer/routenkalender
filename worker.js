@@ -6,9 +6,16 @@
  * Beides steht nur hier, nicht im Quelltext der Website.
  *
  * Nötige Einstellungen im Cloudflare-Dashboard:
- *   Variables (Secrets):  TRIP_USER, TRIP_PASSWORD   und optional TRIP_PASSWORD_VIEW
  *   KV Namespace Binding: TRIP  →  ein Namespace, z. B. "routenkalender"
  *   Variable (Text):      ALLOWED_ORIGIN  →  https://travelengineer.github.io
+ *   Secret (freiwillig):  TRIP_USER            der erwartete Benutzername
+ *   Secret (freiwillig):  TRIP_PASSWORD        das Passwort zum Bearbeiten
+ *   Secret (freiwillig):  TRIP_PASSWORD_VIEW   Passwort nur zum Ansehen
+ *
+ * Ist TRIP_PASSWORD nicht gesetzt, gilt das Passwort der ersten Anmeldung:
+ * der Worker merkt sich davon einen Hash und verlangt ihn ab dann. Deshalb
+ * gleich nach dem Veröffentlichen einmal anmelden. Ein später gesetztes
+ * TRIP_PASSWORD hat immer Vorrang vor dem gemerkten.
  *
  * Endpunkte, beide unter /trip:
  *   GET   liefert den gespeicherten Stand
@@ -21,6 +28,7 @@
  */
 
 const KEY = "trip";
+const AUTH_KEY = "auth";
 const TOMBSTONE_DAYS = 60;
 
 export default {
@@ -33,7 +41,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname !== "/trip") return json({ error: "not_found" }, 404, cors);
 
-    const role = checkAuth(request, env);
+    const role = await checkAuth(request, env);
     if (!role) return json({ error: "unauthorized" }, 401, cors);
 
     if (request.method === "GET") {
@@ -83,13 +91,28 @@ function same(a, b) {
   return diff === 0;
 }
 
-function checkAuth(request, env) {
+async function hash(user, pass) {
+  const data = new TextEncoder().encode("rk1|" + String(user).toLowerCase() + "|" + pass);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function checkAuth(request, env) {
   const user = request.headers.get("X-Trip-User") || "";
   const pass = request.headers.get("X-Trip-Auth") || "";
+  if (!user || !pass) return null;
   if (env.TRIP_USER && !same(user.toLowerCase(), String(env.TRIP_USER).toLowerCase())) return null;
-  if (env.TRIP_PASSWORD && same(pass, env.TRIP_PASSWORD)) return "edit";
   if (env.TRIP_PASSWORD_VIEW && same(pass, env.TRIP_PASSWORD_VIEW)) return "view";
-  return null;
+  if (env.TRIP_PASSWORD) return same(pass, env.TRIP_PASSWORD) ? "edit" : null;
+
+  const stored = await env.TRIP.get(AUTH_KEY);
+  const h = await hash(user, pass);
+  if (!stored) {
+    if (pass.length < 4) return null;
+    await env.TRIP.put(AUTH_KEY, h);
+    return "edit";
+  }
+  return same(stored, h) ? "edit" : null;
 }
 
 async function load(env) {
