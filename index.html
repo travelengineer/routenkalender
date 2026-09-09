@@ -586,7 +586,7 @@ var $ = function(id){ return document.getElementById(id); };
 
 /* Adresse des Cloudflare Workers. Lässt sich auch einmalig über
    ...?sync=https://beispiel.workers.dev setzen, der Wert bleibt dann im Gerät. */
-var SYNC_URL = "";
+var SYNC_URL = "https://routenkalender.lukasschwarz.workers.dev";
 try{
   var qsync = new URLSearchParams(location.search).get("sync");
   if(qsync) localStorage.setItem(SYNCK, qsync);
@@ -628,13 +628,17 @@ function tryLogin(u, p){
   return fetch(SYNC_URL + "/trip", { headers: { "X-Trip-User": u, "X-Trip-Auth": p } })
     .then(function(r){
       if(r.status === 401 || r.status === 403) return null;
-      if(!r.ok) throw new Error("http");
-      return r.json().then(function(j){
+      if(!r.ok) throw { code:"http" };
+      return r.text().then(function(txt){
+        var j = null;
+        try{ j = JSON.parse(txt); }catch(e){ throw { code:"no_backend" }; }
+        if(!j || !("doc" in j)) throw { code:"no_backend" };
         serverDoc = j.doc || null;
         return j.role === "view" ? "view" : "edit";
       });
     })
-    .catch(function(){
+    .catch(function(err){
+      if(err && err.code === "no_backend") throw err;
       return pwHash(u, p).then(function(h){
         var stored = "";
         try{ stored = localStorage.getItem(PWK) || ""; }catch(e){}
@@ -667,8 +671,10 @@ $("gateForm").addEventListener("submit", function(ev){
     storeAuth(auth, $("gKeep").checked);
     if(r !== "offline") pwHash(u, p).then(function(h){ try{ localStorage.setItem(PWK, h); }catch(e){} });
     unlock();
-  }).catch(function(){
-    $("gErr").textContent = "Anmeldung derzeit nicht möglich, bitte später nochmal.";
+  }).catch(function(err){
+    $("gErr").textContent = (err && err.code === "no_backend")
+      ? "Die Ablage antwortet noch nicht. Im Cloudflare Worker fehlt der Code aus worker.js."
+      : "Anmeldung derzeit nicht möglich, bitte später nochmal.";
     $("gErr").classList.add("show");
   }).then(function(){
     btn.disabled = false;

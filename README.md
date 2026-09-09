@@ -48,9 +48,10 @@ als Grabstein vermerkt und taucht daher nicht vom anderen Gerät wieder auf.
    - `TRIP_PASSWORD` (Secret) – das Passwort zum Bearbeiten
    - `TRIP_PASSWORD_VIEW` (Secret, freiwillig) – Passwort nur zum Ansehen
    - `ALLOWED_ORIGIN` (Text) – `https://travelengineer.github.io`
-6. Die Adresse des Workers (`https://….workers.dev`) in `index.html` bei
-   `var SYNC_URL = "";` eintragen. Alternativ die Seite einmal je Gerät mit
-   `?sync=https://….workers.dev` aufrufen, die Adresse bleibt dann gespeichert.
+6. Die Adresse des Workers steht in `index.html` bei `var SYNC_URL`. Eingetragen
+   ist `https://routenkalender.lukasschwarz.workers.dev`. Eine andere Adresse lässt
+   sich je Gerät auch über `?sync=https://….workers.dev` setzen, sie bleibt dann
+   dort gespeichert.
 
 Danach steht das Passwort nur noch im Worker, nicht mehr im Quelltext, und die
 Anmeldemaske schützt die Daten tatsächlich.
