@@ -1,10 +1,19 @@
 # Routenkalender
 
-Wochenweiser Reisekalender für Roadtrips. Eine Zeile ist eine Kalenderwoche von
-Montag bis Sonntag, am Desktop und am iPad im Format 4:3, am iPhone als
-Tagesliste mit einem kompakten Punkteraster als Übersicht.
+Wochenweiser Reisekalender für Roadtrips, unter dem Namen **travelengineer**.
+Am Desktop und am iPad ein Kalender im Format 4:3, eine Zeile je Kalenderwoche
+von Montag bis Sonntag. Am iPhone eine eigene, auf das Gerät zugeschnittene
+Fassung: Tagesliste, aufklappbarer Zeitraum, Menü hinter den drei Punkten,
+runder Plus-Knopf. Der Kalender entfällt dort bewusst.
 
 **Live:** https://travelengineer.github.io/routenkalender/
+
+## Bedienung im Kalender
+
+Auf eine freie Fläche eines Tages tippen legt dort einen Eintrag an. Bestehende
+Einträge lassen sich auf einen anderen Tag ziehen, mit Maus und am iPad mit dem
+Finger nach kurzem Halten. Ein Aufenthalt behält dabei seine Länge und beginnt am
+Zieltag. Am Rand scrollt die Seite beim Ziehen mit.
 
 ## Eintragsarten
 
@@ -79,6 +88,12 @@ Die Beispielreise steht in `index.html` im Block zwischen `BEGINN STARTDATEN` un
 `ENDE STARTDATEN`. Sie wird nur geladen, solange im Browser noch nichts
 gespeichert ist, und dient bei eingerichteter Ablage als erster Serverstand. Für
 einen leeren Kalender die Liste `entries` auf `[]` setzen.
+
+## Marke
+
+Logo in `travelengineer-logo-hell.png` und `travelengineer-logo-dunkel.png`, die
+freigestellte Bildmarke in `travelengineer-mark.png`. In der Seite steckt die
+Bildmarke als eingebettete Datei, im dunklen Erscheinungsbild wird sie umgekehrt.
 
 ## Aufbau
 
